@@ -75,7 +75,7 @@ class _EstablishmentIbscbsAssessmentSectionState
     _view = view;
     _epoch++;
     _pending.clear();
-    _validFrom.text = isoDateToDisplay(suggestedAssessmentStart(view.today));
+    _validFrom.text = isoDateToDisplay(suggestedAssessmentStart(view.firstStart));
     _assessment = null;
   }
 
@@ -96,8 +96,10 @@ class _EstablishmentIbscbsAssessmentSectionState
     if (failure != null) await showFailureFeedback(context, failure);
   }
 
+  /// [focusDate]: só o REGISTRO tem o campo de data — a recusa de uma linha
+  /// (alterar/excluir) nunca leva o foco para o campo do registro novo.
   Future<void> _run(Future<IbscbsAssessmentView> Function() action,
-      String successKey) async {
+      String successKey, {bool focusDate = false}) async {
     setState(() => _busy = true);
     IbscbsAssessmentView? view;
     Failure? failure;
@@ -113,7 +115,8 @@ class _EstablishmentIbscbsAssessmentSectionState
     });
     if (failure != null) {
       await showFailureFeedback(context, failure);
-      if (mounted && failure.fields.any((f) => f.field == 'validFrom')) {
+      if (mounted && focusDate &&
+          failure.fields.any((f) => f.field == 'validFrom')) {
         _validFromFocus.requestFocus();
       }
       return;
@@ -140,6 +143,7 @@ class _EstablishmentIbscbsAssessmentSectionState
     await _run(
       () => widget.datasource.create(validFrom: validFrom, assessment: _assessment!),
       'forms.establishment.ibscbsSaved',
+      focusDate: true,
     );
   }
 
@@ -185,17 +189,18 @@ class _EstablishmentIbscbsAssessmentSectionState
   Future<void> _pickDate() async {
     final view = _view!;
     final currentIso = displayDateToIso(_validFrom.text);
-    final today = DateTime.parse(view.today);
-    final last = DateTime(today.year + 10, 12, 31);
+    // o 1º início aceito (hoje ou o dia seguinte à última nota — D-IB101)
+    final first = DateTime.parse(view.firstStart);
+    final last = DateTime(first.year + 10, 12, 31);
     // a data digitada pode estar fora do intervalo do seletor (passada ou
     // longe demais) — o initialDate fora de [first, last] derruba o Flutter
-    var initial = currentIso == null ? today : DateTime.parse(currentIso);
-    if (initial.isBefore(today)) initial = today;
+    var initial = currentIso == null ? first : DateTime.parse(currentIso);
+    if (initial.isBefore(first)) initial = first;
     if (initial.isAfter(last)) initial = last;
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
-      firstDate: today,
+      firstDate: first,
       lastDate: last,
     );
     if (picked == null || !mounted) return;
@@ -212,6 +217,8 @@ class _EstablishmentIbscbsAssessmentSectionState
   String _pendencyText(String key) => key.tr(namedArgs: {
         'today': isoDateToDisplay(_view!.today),
         'start': isoDateToDisplay(_view!.regularStart),
+        'invoice': isoDateToDisplay(_view!.lastInvoice),
+        'first': isoDateToDisplay(_view!.firstStart),
       });
 
   String _assessmentLabel(String assessment) =>

@@ -69,7 +69,9 @@ class IbscbsAssessmentLine {
 class IbscbsAssessmentView {
   const IbscbsAssessmentView({
     required this.today,
+    required this.firstStart,
     required this.regularStart,
+    this.lastInvoice,
     required this.currentAssessment,
     this.supported = const ['1'],
     this.currentValidFrom,
@@ -83,6 +85,8 @@ class IbscbsAssessmentView {
     final current = json['current'] as Map<String, dynamic>;
     return IbscbsAssessmentView(
       today: json['today'] as String,
+      lastInvoice: json['lastInvoice'] as String?,
+      firstStart: json['firstStart'] as String,
       regularStart: json['regularStart'] as String,
       supported: [for (final s in json['supported'] as List<dynamic>) s as String],
       currentAssessment: current['assessment'] as String,
@@ -97,6 +101,14 @@ class IbscbsAssessmentView {
 
   /// Hoje do estabelecimento (fuso) — a fronteira passado × futuro.
   final String today;
+
+  /// D-IB101: a última data de emissão de nota viva (null = nenhuma) — a
+  /// opção nunca começa nela ou antes (mudaria o que a nota já leu).
+  final String? lastInvoice;
+
+  /// O 1º início que a API aceita hoje (o maior entre hoje e o dia seguinte
+  /// à última nota) — a tela sugere e limita o seletor por ele.
+  final String firstStart;
 
   /// A partir de quando o regime regular (2/3) pode valer.
   final String regularStart;
@@ -131,6 +143,9 @@ class IbscbsAssessmentView {
     }
     if (validFrom!.compareTo(today) < 0) {
       return 'forms.establishment.ibscbsDatePast';
+    }
+    if (lastInvoice != null && validFrom.compareTo(lastInvoice!) <= 0) {
+      return 'forms.establishment.ibscbsDateInvoiced';
     }
     if (isRegularAssessment(assessment) &&
         validFrom.compareTo(regularStart) < 0) {

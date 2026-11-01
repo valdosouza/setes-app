@@ -417,7 +417,7 @@
       "ibscbsEnded": "ended",
       "ibscbsNotSupported": "regular regime — not supported yet",
       "ibscbsNewSection": "Record option",
-      "ibscbsSuggestion": "Suggestion: start of a semester (01/01 or 07/01). Any date from today on is accepted; the regular regime only applies from 01/01/2027.",
+      "ibscbsSuggestion": "Suggestion: start of a semester (01/01 or 07/01). Any date from today on, after the last issued invoice, is accepted (the option never changes what an invoice already read); the regular regime only applies from 01/01/2027.",
       "ibscbsValidFrom": "Option start (dd/mm/yyyy)",
       "ibscbsPickDate": "Pick the date",
       "ibscbsAssessment": "Assessment option",
@@ -437,7 +437,8 @@
       "ibscbsDatePast": "The start date cannot be before today ({today}) — the past does not change",
       "ibscbsRegularTooEarly": "The regular regime (option 2 or 3) can only apply from {start}",
       "ibscbsUnsupportedConfirm": "With this option, invoicing will be REFUSED from {} on (the regular IBS/CBS regime is not supported yet). Confirm?",
-      "ibscbsConfirm": "Confirm"
+      "ibscbsConfirm": "Confirm",
+      "ibscbsDateInvoiced": "An invoice was already issued on {invoice} — the option cannot start on that date or before (it would change what the invoice already read); use {first} or later"
     },
     "user": {
       "code": "User Code",

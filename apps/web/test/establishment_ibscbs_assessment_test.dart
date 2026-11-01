@@ -24,11 +24,15 @@ import 'package:setes_web/app/shared/field_config/entity/field_config_entity.dar
 
 Map<String, dynamic> _viewJson({
   String today = '2026-11-01',
+  String? lastInvoice,
+  String? firstStart,
   Map<String, dynamic> current = const {'assessment': '1', 'validFrom': null, 'supported': true},
   List<Map<String, dynamic>> items = const [],
 }) =>
     {
       'today': today,
+      'lastInvoice': lastInvoice,
+      'firstStart': firstStart ?? today,
       'regularStart': '2027-01-01',
       'supported': ['1'],
       'current': current,
@@ -61,9 +65,13 @@ class _FakeDatasource implements EstablishmentIbscbsAssessmentDatasource {
     return _view;
   }
 
+  /// Falha só do change (a recusa de uma LINHA — D-IB101).
+  Failure? failChange;
+
   @override
   Future<IbscbsAssessmentView> change(String validFrom,
       {required String assessment}) async {
+    if (failChange != null) throw failChange!;
     calls.add('change:$validFrom:$assessment');
     return _view;
   }
@@ -132,6 +140,16 @@ void main() {
       expect(suggestedAssessmentStart('2027-01-01'), '2027-01-01');
       expect(suggestedAssessmentStart('2027-03-10'), '2027-07-01');
       expect(suggestedAssessmentStart('2027-07-02'), '2028-01-01');
+    });
+
+    test('D-IB101: início ≤ a última nota = pendência própria; o 1º início aceito vem da API', () {
+      final view = IbscbsAssessmentView.fromJson(
+          _viewJson(lastInvoice: '2027-01-05', firstStart: '2027-01-06', today: '2027-01-01'));
+      expect(view.lastInvoice, '2027-01-05');
+      expect(view.firstStart, '2027-01-06');
+      expect(view.pendencyFor('2027-01-05', '1'), 'forms.establishment.ibscbsDateInvoiced');
+      expect(view.pendencyFor('2027-01-06', '1'), isNull);
+      expect(() => IbscbsAssessmentView.fromJson({..._viewJson(), 'firstStart': null}), throwsA(anything));
     });
 
     test('pendências espelham a regra da API (data real, hoje, piso do regular)', () {
@@ -245,6 +263,28 @@ void main() {
       await tester.tap(_button('Registrar'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Já existe opção de apuração'), findsOneWidget);
+    });
+
+    testWidgets('D-IB101: a sugestão parte do 1º início aceito (dia seguinte à última nota)', (tester) async {
+      final ds = _FakeDatasource(_viewJson(today: '2027-03-10', lastInvoice: '2027-03-10', firstStart: '2027-03-11'));
+      await _pump(tester, ds);
+      expect(find.text('01/07/2027'), findsOneWidget);   // próximo início de semestre a partir de 11/03/2027
+    });
+
+    testWidgets('D-IB101 (ADV-D101-05): a recusa de uma LINHA não leva o foco ao campo do registro novo', (tester) async {
+      final ds = _FakeDatasource(_viewJson(items: [
+        {'validFrom': '2027-01-01', 'assessment': '1', 'supported': true, 'inEffect': false, 'editable': true},
+      ]))
+        ..failChange = const Failure(message: 'Já existe nota emitida em 2027-01-01 …', code: 'IBSCBS_ASSESSMENT_INVOICED',
+            fields: [FailureField(field: 'validFrom', message: 'Depois de 2027-01-01')]);
+      await _pump(tester, ds);
+      await tester.tap(_button('Salvar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK').last);
+      await tester.pumpAndSettle();
+      final field = tester.widget<EditableText>(find.descendant(
+          of: find.widgetWithText(TextFormField, 'Início da opção (dd/mm/aaaa)'), matching: find.byType(EditableText)));
+      expect(field.focusNode.hasFocus, isFalse);
     });
 
     testWidgets('motor de campos: o rótulo do cliente substitui o padrão do app', (tester) async {
