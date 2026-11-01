@@ -445,7 +445,8 @@
       "ibscbsSimplesRegime2": "MEI",
       "ibscbsSimplesRegime3": "ME/EPP",
       "ibscbsSimplesRegime4": "pending option",
-      "ibscbsSimplesRegimeNone": "not informed"
+      "ibscbsSimplesRegimeNone": "not informed",
+      "ibscbsDesktopEmissionHint": "This establishment also sends invoices from another system through synchronization: the option recorded here applies only to invoices issued by this system."
     },
     "user": {
       "code": "User Code",

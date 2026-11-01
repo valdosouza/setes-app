@@ -28,6 +28,7 @@ Map<String, dynamic> _viewJson({
   String? firstStart,
   bool regularAllowed = true,
   String? simplesRegime = '3',
+  bool desktopEmission = false,
   Map<String, dynamic> current = const {'assessment': '1', 'validFrom': null, 'supported': true},
   List<Map<String, dynamic>> items = const [],
 }) =>
@@ -37,6 +38,7 @@ Map<String, dynamic> _viewJson({
       'firstStart': firstStart ?? today,
       'simplesRegime': simplesRegime,
       'regularAllowed': regularAllowed,
+      'desktopEmission': desktopEmission,
       'regularStart': '2027-01-01',
       'supported': ['1'],
       'current': current,
@@ -330,6 +332,15 @@ void main() {
       expect(ds.calls.where((c) => c == 'get').length, 2);
       expect(find.textContaining('Regime do Simples gravado'), findsNothing);
       expect(find.text('01/07/2027'), findsOneWidget);          // o rascunho ficou
+    });
+
+    testWidgets('D-IB104: com sincronizador a aba avisa que a opção vale só para as notas deste sistema; sem, não', (tester) async {
+      await _pump(tester, _FakeDatasource(_viewJson(desktopEmission: true)));
+      expect(find.textContaining('vale só para as notas emitidas por este sistema'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());   // desmonta (a seção nova lê a visão de novo)
+      await _pump(tester, _FakeDatasource(_viewJson()));
+      expect(find.textContaining('vale só para as notas emitidas por este sistema'), findsNothing);
+      expect(() => IbscbsAssessmentView.fromJson({..._viewJson()}..remove('desktopEmission')), throwsA(anything));   // estrito
     });
 
     testWidgets('motor de campos: o rótulo do cliente substitui o padrão do app', (tester) async {

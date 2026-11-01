@@ -445,7 +445,8 @@
       "ibscbsSimplesRegime2": "MEI",
       "ibscbsSimplesRegime3": "ME/EPP",
       "ibscbsSimplesRegime4": "opção pendente",
-      "ibscbsSimplesRegimeNone": "não informado"
+      "ibscbsSimplesRegimeNone": "não informado",
+      "ibscbsDesktopEmissionHint": "Este estabelecimento também envia notas de outro sistema pela sincronização: a opção registrada aqui vale só para as notas emitidas por este sistema."
     },
     "user": {
       "code": "Código do Usuário",

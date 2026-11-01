@@ -74,6 +74,7 @@ class IbscbsAssessmentView {
     this.lastInvoice,
     this.simplesRegime,
     this.regularAllowed = false,
+    this.desktopEmission = false,
     required this.currentAssessment,
     this.supported = const ['1'],
     this.currentValidFrom,
@@ -92,6 +93,7 @@ class IbscbsAssessmentView {
       simplesRegime: json['simplesRegime'] as String?,
       // estrito (ADV-D102-02): ausente = falha de LEITURA, nunca "não informado" inventado para um ME/EPP
       regularAllowed: json['regularAllowed'] as bool,
+      desktopEmission: json['desktopEmission'] as bool,
       regularStart: json['regularStart'] as String,
       supported: [for (final s in json['supported'] as List<dynamic>) s as String],
       currentAssessment: current['assessment'] as String,
@@ -120,6 +122,11 @@ class IbscbsAssessmentView {
   /// ME/EPP ou com opção pendente). A API decide; a tela só avisa antes.
   final String? simplesRegime;
   final bool regularAllowed;
+
+  /// D-IB104: o estabelecimento também emite por outro sistema que chega pela
+  /// sincronização — a opção registrada aqui vale só para as notas emitidas
+  /// por este sistema (a tela avisa).
+  final bool desktopEmission;
 
   /// A partir de quando o regime regular (2/3) pode valer.
   final String regularStart;

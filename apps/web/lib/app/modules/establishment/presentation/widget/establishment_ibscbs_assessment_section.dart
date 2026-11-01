@@ -278,6 +278,10 @@ class _EstablishmentIbscbsAssessmentSectionState
       children: [
         SetesText('forms.establishment.ibscbsCurrent'
             .tr(args: [_assessmentLabel(view.currentAssessment), since])),
+        if (view.desktopEmission) ...[
+          const SizedBox(height: 8),
+          SetesText('forms.establishment.ibscbsDesktopEmissionHint'.tr()),
+        ],
         if (!view.regularAllowed) ...[
           const SizedBox(height: 8),
           SetesText('forms.establishment.ibscbsRegularNotAllowedHint'
