@@ -29,6 +29,7 @@ class EstablishmentIbscbsAssessmentSection extends StatefulWidget {
   const EstablishmentIbscbsAssessmentSection({
     required this.datasource,
     this.fieldConfig = const [],
+    this.refreshEpoch = 0,
     super.key,
   });
 
@@ -36,6 +37,10 @@ class EstablishmentIbscbsAssessmentSection extends StatefulWidget {
 
   /// Config resolvida da interface `establishment` (FieldConfigLoader da página).
   final List<FieldConfigEntity> fieldConfig;
+
+  /// Muda quando a página salva o estabelecimento (o regime do Simples da aba
+  /// Principal decide a D-IB102) — a seção relê a visão (ADV-D102-04).
+  final int refreshEpoch;
 
   @override
   State<EstablishmentIbscbsAssessmentSection> createState() =>
@@ -62,6 +67,13 @@ class _EstablishmentIbscbsAssessmentSectionState
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void didUpdateWidget(EstablishmentIbscbsAssessmentSection old) {
+    super.didUpdateWidget(old);
+    // relê SEM apagar o rascunho (data digitada, opção escolhida, trocas pendentes) — re-prova do gate, LOW
+    if (old.refreshEpoch != widget.refreshEpoch) _refreshQuietly();
   }
 
   @override
@@ -115,13 +127,25 @@ class _EstablishmentIbscbsAssessmentSectionState
     });
     if (failure != null) {
       await showFailureFeedback(context, failure);
-      if (mounted && focusDate &&
-          failure.fields.any((f) => f.field == 'validFrom')) {
+      if (!mounted) return;
+      if (focusDate && failure.fields.any((f) => f.field == 'validFrom')) {
         _validFromFocus.requestFocus();
       }
+      await _refreshQuietly();   // ADV-D102-04: a recusa diz que a visão envelheceu (regime, última nota, linhas)
       return;
     }
     await showSuccessFeedback(context, successKey);
+  }
+
+  /// Relê a visão sem spinner nem dialog (depois de uma recusa): falhou, fica a
+  /// que está — a recusa já foi mostrada pela ponte.
+  Future<void> _refreshQuietly() async {
+    try {
+      final view = await widget.datasource.get();
+      if (mounted) setState(() => _view = view);
+    } on Failure {
+      // a tela segue com a visão anterior
+    }
   }
 
   // ------------------------------------------------------------------
@@ -226,6 +250,13 @@ class _EstablishmentIbscbsAssessmentSectionState
           ? 'forms.establishment.ibscbsAssessment$assessment'.tr()
           : 'forms.establishment.ibscbsAssessmentUnknown'.tr(args: [assessment]);
 
+  /// opSimpNac gravado, por extenso (D-IB102).
+  String _simplesRegimeName(String? regime) => switch (regime) {
+        '1' || '2' || '3' || '4' =>
+          'forms.establishment.ibscbsSimplesRegime$regime'.tr(),
+        _ => 'forms.establishment.ibscbsSimplesRegimeNone'.tr(),
+      };
+
   /// Rótulo do cliente (motor de campos) ou o padrão do app.
   String _label(String field, String i18nKey) =>
       fieldConfigOf(widget.fieldConfig, field)?.caption ?? i18nKey.tr();
@@ -247,6 +278,11 @@ class _EstablishmentIbscbsAssessmentSectionState
       children: [
         SetesText('forms.establishment.ibscbsCurrent'
             .tr(args: [_assessmentLabel(view.currentAssessment), since])),
+        if (!view.regularAllowed) ...[
+          const SizedBox(height: 8),
+          SetesText('forms.establishment.ibscbsRegularNotAllowedHint'
+              .tr(args: [_simplesRegimeName(view.simplesRegime)])),
+        ],
         if (unsupported != null) ...[
           const SizedBox(height: 8),
           SetesText(

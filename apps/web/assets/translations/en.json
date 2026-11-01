@@ -438,7 +438,14 @@
       "ibscbsRegularTooEarly": "The regular regime (option 2 or 3) can only apply from {start}",
       "ibscbsUnsupportedConfirm": "With this option, invoicing will be REFUSED from {} on (the regular IBS/CBS regime is not supported yet). Confirm?",
       "ibscbsConfirm": "Confirm",
-      "ibscbsDateInvoiced": "An invoice was already issued on {invoice} — the option cannot start on that date or before (it would change what the invoice already read); use {first} or later"
+      "ibscbsDateInvoiced": "An invoice was already issued on {invoice} — the option cannot start on that date or before (it would change what the invoice already read); use {first} or later",
+      "ibscbsRegularNotSimples": "The regular-regime option (2 or 3) is only for Simples Nacional ME/EPP taxpayers or with a pending option — set the Simples regime to ME/EPP on the Main tab or record option 1",
+      "ibscbsRegularNotAllowedHint": "Recorded Simples regime: {} — options 2 and 3 (regular regime) are not accepted; option 1 and deleting upcoming lines remain possible.",
+      "ibscbsSimplesRegime1": "not a Simples taxpayer",
+      "ibscbsSimplesRegime2": "MEI",
+      "ibscbsSimplesRegime3": "ME/EPP",
+      "ibscbsSimplesRegime4": "pending option",
+      "ibscbsSimplesRegimeNone": "not informed"
     },
     "user": {
       "code": "User Code",

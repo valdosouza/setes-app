@@ -438,7 +438,14 @@
       "ibscbsRegularTooEarly": "O regime regular (opção 2 ou 3) só pode valer a partir de {start}",
       "ibscbsUnsupportedConfirm": "Com esta opção o faturamento será RECUSADO a partir de {} (o regime regular de IBS/CBS ainda não é suportado). Confirmar?",
       "ibscbsConfirm": "Confirmar",
-      "ibscbsDateInvoiced": "Já existe nota emitida em {invoice} — a opção não pode começar nessa data ou antes (mudaria o que a nota já leu); use a partir de {first}"
+      "ibscbsDateInvoiced": "Já existe nota emitida em {invoice} — a opção não pode começar nessa data ou antes (mudaria o que a nota já leu); use a partir de {first}",
+      "ibscbsRegularNotSimples": "A opção pelo regime regular (2 ou 3) é só para optante do Simples Nacional ME/EPP ou com opção pendente — ajuste o regime do Simples para ME/EPP na aba Principal ou registre a opção 1",
+      "ibscbsRegularNotAllowedHint": "Regime do Simples gravado: {} — as opções 2 e 3 (regime regular) não são aceitas; a opção 1 e a exclusão de linhas futuras seguem possíveis.",
+      "ibscbsSimplesRegime1": "não optante",
+      "ibscbsSimplesRegime2": "MEI",
+      "ibscbsSimplesRegime3": "ME/EPP",
+      "ibscbsSimplesRegime4": "opção pendente",
+      "ibscbsSimplesRegimeNone": "não informado"
     },
     "user": {
       "code": "Código do Usuário",

@@ -26,6 +26,8 @@ Map<String, dynamic> _viewJson({
   String today = '2026-11-01',
   String? lastInvoice,
   String? firstStart,
+  bool regularAllowed = true,
+  String? simplesRegime = '3',
   Map<String, dynamic> current = const {'assessment': '1', 'validFrom': null, 'supported': true},
   List<Map<String, dynamic>> items = const [],
 }) =>
@@ -33,6 +35,8 @@ Map<String, dynamic> _viewJson({
       'today': today,
       'lastInvoice': lastInvoice,
       'firstStart': firstStart ?? today,
+      'simplesRegime': simplesRegime,
+      'regularAllowed': regularAllowed,
       'regularStart': '2027-01-01',
       'supported': ['1'],
       'current': current,
@@ -150,6 +154,15 @@ void main() {
       expect(view.pendencyFor('2027-01-05', '1'), 'forms.establishment.ibscbsDateInvoiced');
       expect(view.pendencyFor('2027-01-06', '1'), isNull);
       expect(() => IbscbsAssessmentView.fromJson({..._viewJson(), 'firstStart': null}), throwsA(anything));
+      // ADV-D102-02: sem `regularAllowed` é falha de LEITURA (nunca "não informado" inventado para um ME/EPP)
+      expect(() => IbscbsAssessmentView.fromJson({..._viewJson()}..remove('regularAllowed')), throwsA(anything));
+    });
+
+    test('D-IB102: sem ME/EPP nem pendente, 2/3 viram pendência própria; a 1 passa', () {
+      final view = IbscbsAssessmentView.fromJson(_viewJson(regularAllowed: false, simplesRegime: '1'));
+      expect(view.regularAllowed, isFalse);
+      expect(view.pendencyFor('2027-01-01', '3'), 'forms.establishment.ibscbsRegularNotSimples');
+      expect(view.pendencyFor('2027-01-01', '1'), isNull);
     });
 
     test('pendências espelham a regra da API (data real, hoje, piso do regular)', () {
@@ -285,6 +298,38 @@ void main() {
       final field = tester.widget<EditableText>(find.descendant(
           of: find.widgetWithText(TextFormField, 'Início da opção (dd/mm/aaaa)'), matching: find.byType(EditableText)));
       expect(field.focusNode.hasFocus, isFalse);
+      expect(ds.calls.where((c) => c == 'get').length, 2);   // ADV-D102-04: a recusa relê a visão
+    });
+
+    testWidgets('D-IB102: quem não é do Simples vê o porquê e o registro de 3 para na pendência (nada vai à API)', (tester) async {
+      final ds = _FakeDatasource(_viewJson(regularAllowed: false, simplesRegime: '1'));
+      await _pump(tester, ds);
+      expect(find.textContaining('Regime do Simples gravado: não optante'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextFormField, 'Início da opção (dd/mm/aaaa)'), '01/01/2027');
+      await _choose(tester, 'Opção de apuração', '3 — IBS e CBS apurados pelo regime regular');
+      await tester.tap(_button('Registrar'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('só para optante do Simples Nacional ME/EPP'), findsOneWidget);
+      expect(ds.calls, ['get']);
+    });
+
+    testWidgets('salvar o estabelecimento relê a visão (regularAllowed passa a valer) SEM apagar o rascunho', (tester) async {
+      final ds = _FakeDatasource(_viewJson(regularAllowed: false, simplesRegime: '1'));
+      Widget host(int epoch) => _wrap(EstablishmentIbscbsAssessmentSection(datasource: ds, refreshEpoch: epoch));
+      tester.view.physicalSize = const Size(1000, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(host(0));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Regime do Simples gravado: não optante'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextFormField, 'Início da opção (dd/mm/aaaa)'), '01/07/2027');
+      ds.json = _viewJson();                                    // o admin gravou ME/EPP na aba Principal
+      await tester.pumpWidget(host(1));
+      await tester.pumpAndSettle();
+      expect(ds.calls.where((c) => c == 'get').length, 2);
+      expect(find.textContaining('Regime do Simples gravado'), findsNothing);
+      expect(find.text('01/07/2027'), findsOneWidget);          // o rascunho ficou
     });
 
     testWidgets('motor de campos: o rótulo do cliente substitui o padrão do app', (tester) async {

@@ -72,6 +72,8 @@ class IbscbsAssessmentView {
     required this.firstStart,
     required this.regularStart,
     this.lastInvoice,
+    this.simplesRegime,
+    this.regularAllowed = false,
     required this.currentAssessment,
     this.supported = const ['1'],
     this.currentValidFrom,
@@ -87,6 +89,9 @@ class IbscbsAssessmentView {
       today: json['today'] as String,
       lastInvoice: json['lastInvoice'] as String?,
       firstStart: json['firstStart'] as String,
+      simplesRegime: json['simplesRegime'] as String?,
+      // estrito (ADV-D102-02): ausente = falha de LEITURA, nunca "não informado" inventado para um ME/EPP
+      regularAllowed: json['regularAllowed'] as bool,
       regularStart: json['regularStart'] as String,
       supported: [for (final s in json['supported'] as List<dynamic>) s as String],
       currentAssessment: current['assessment'] as String,
@@ -109,6 +114,12 @@ class IbscbsAssessmentView {
   /// O 1º início que a API aceita hoje (o maior entre hoje e o dia seguinte
   /// à última nota) — a tela sugere e limita o seletor por ele.
   final String firstStart;
+
+  /// D-IB102: o regime do Simples gravado no estabelecimento (opSimpNac — null
+  /// = não informado) e se ele admite a opção pelo regime regular (2/3: só
+  /// ME/EPP ou com opção pendente). A API decide; a tela só avisa antes.
+  final String? simplesRegime;
+  final bool regularAllowed;
 
   /// A partir de quando o regime regular (2/3) pode valer.
   final String regularStart;
@@ -146,6 +157,9 @@ class IbscbsAssessmentView {
     }
     if (lastInvoice != null && validFrom.compareTo(lastInvoice!) <= 0) {
       return 'forms.establishment.ibscbsDateInvoiced';
+    }
+    if (isRegularAssessment(assessment) && !regularAllowed) {
+      return 'forms.establishment.ibscbsRegularNotSimples';
     }
     if (isRegularAssessment(assessment) &&
         validFrom.compareTo(regularStart) < 0) {

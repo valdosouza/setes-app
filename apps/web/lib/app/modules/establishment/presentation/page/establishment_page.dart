@@ -60,6 +60,10 @@ class _EstablishmentPageState extends State<EstablishmentPage>
   late final EstablishmentIssuerDatasource _issuerDatasource;
   late final EstablishmentIbscbsAssessmentDatasource _ibscbsDatasource;
 
+  /// Sobe a cada salvar do estabelecimento — a aba do regime IBS/CBS relê a
+  /// visão (o regime do Simples da aba Principal decide a D-IB102).
+  int _ibscbsEpoch = 0;
+
   /// Ancora o fields[] do servidor no campo certo (showServerFieldError).
   final _formViewKey = GlobalKey<_EstablishmentFormViewState>();
 
@@ -118,6 +122,7 @@ class _EstablishmentPageState extends State<EstablishmentPage>
         listener: (context, state) {
           if (state is EstablishmentActionSuccess) {
             showSuccessFeedback(context, state.messageKey);
+            setState(() => _ibscbsEpoch++);
             return;
           }
           final failure = (state as EstablishmentActionFailure).failure;
@@ -156,6 +161,7 @@ class _EstablishmentPageState extends State<EstablishmentPage>
             cityLookup: _cityLookup,
             issuerDatasource: _issuerDatasource,
             ibscbsDatasource: _ibscbsDatasource,
+            ibscbsEpoch: _ibscbsEpoch,
             fieldConfig: fieldConfig,
             onDraftChanged: (d) => _bloc.add(EstablishmentDraftChanged(d)),
             onSave: () => _bloc.add(EstablishmentSaveRequested(draft)),
@@ -179,6 +185,7 @@ class _EstablishmentFormView extends StatefulWidget {
     required this.cityLookup,
     required this.issuerDatasource,
     required this.ibscbsDatasource,
+    this.ibscbsEpoch = 0,
     this.fieldConfig = const [],
     required this.onDraftChanged,
     required this.onSave,
@@ -194,6 +201,7 @@ class _EstablishmentFormView extends StatefulWidget {
   final CityLookupDatasource cityLookup;
   final EstablishmentIssuerDatasource issuerDatasource;
   final EstablishmentIbscbsAssessmentDatasource ibscbsDatasource;
+  final int ibscbsEpoch;
 
   /// Config resolvida da interface `establishment` (motor de campos).
   final List<FieldConfigEntity> fieldConfig;
@@ -665,6 +673,7 @@ class _EstablishmentFormViewState extends State<_EstablishmentFormView>
                     EstablishmentIbscbsAssessmentSection(
                       datasource: widget.ibscbsDatasource,
                       fieldConfig: widget.fieldConfig,
+                      refreshEpoch: widget.ibscbsEpoch,
                     ),
                   ],
                 ),
