@@ -5,6 +5,7 @@ import '../../shared/lookup/datasource/city_lookup_datasource.dart';
 import '../../shared/lookup/datasource/country_lookup_datasource.dart';
 import '../../shared/lookup/datasource/state_lookup_datasource.dart';
 import 'data/datasource/establishment_datasource.dart';
+import 'data/datasource/establishment_ibscbs_assessment_datasource.dart';
 import 'data/datasource/establishment_issuer_datasource.dart';
 import 'data/repository/establishment_repository_impl.dart';
 import 'domain/repository/establishment_repository.dart';
@@ -29,6 +30,12 @@ class EstablishmentModule extends Module {
         // fora do bloc do form — molde bank_account_channel_section).
         Bind.lazySingleton<EstablishmentIssuerDatasource>((i) =>
             EstablishmentIssuerDatasourceImpl(client: i.get<NfseApiClient>())),
+        // Sub-recurso OPÇÃO DE APURAÇÃO DO IBS/CBS (D-IB99/D-IB100): aba
+        // autônoma "Regime IBS/CBS" — fala com a setes-api (/api/establishment/
+        // ibscbs-assessments), ciclo próprio fora do bloc do form.
+        Bind.lazySingleton<EstablishmentIbscbsAssessmentDatasource>((i) =>
+            EstablishmentIbscbsAssessmentDatasourceImpl(
+                client: i.get<ApiClient>())),
         Bind.lazySingleton<EstablishmentRepository>((i) =>
             EstablishmentRepositoryImpl(
                 datasource: i.get<EstablishmentDatasource>())),

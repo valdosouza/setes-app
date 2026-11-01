@@ -1,0 +1,259 @@
+// Aba AUTÔNOMA "Regime IBS/CBS" do Meu Estabelecimento (fase IBS/CBS,
+// D-IB99/D-IB100): a opção de apuração do IBS/CBS do Simples, datada.
+// Entidade (leitura estrita, sugestão de data, pendências que espelham a
+// regra da API) e a seção com datasource FALSO: vale hoje, aviso de recusa do
+// faturamento com o regime regular, só a linha FUTURA muda, registrar com as
+// pendências pela PONTE, rótulo do cliente pelo motor de campos.
+
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:core/core.dart';
+// Carga direta das traduções no teste (sem o widget EasyLocalization) —
+// Localization/Translations não saem pelo barrel do pacote.
+// ignore: implementation_imports
+import 'package:easy_localization/src/localization.dart';
+// ignore: implementation_imports
+import 'package:easy_localization/src/translations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:setes_web/app/modules/establishment/data/datasource/establishment_ibscbs_assessment_datasource.dart';
+import 'package:setes_web/app/modules/establishment/domain/entity/establishment_ibscbs_assessment_entity.dart';
+import 'package:setes_web/app/modules/establishment/presentation/widget/establishment_ibscbs_assessment_section.dart';
+import 'package:setes_web/app/shared/field_config/entity/field_config_entity.dart';
+
+Map<String, dynamic> _viewJson({
+  String today = '2026-11-01',
+  Map<String, dynamic> current = const {'assessment': '1', 'validFrom': null, 'supported': true},
+  List<Map<String, dynamic>> items = const [],
+}) =>
+    {
+      'today': today,
+      'regularStart': '2027-01-01',
+      'supported': ['1'],
+      'current': current,
+      'items': items,
+    };
+
+class _FakeDatasource implements EstablishmentIbscbsAssessmentDatasource {
+  _FakeDatasource(this.json);
+
+  Map<String, dynamic> json;
+  final calls = <String>[];
+  Failure? failOn;
+
+  IbscbsAssessmentView get _view => IbscbsAssessmentView.fromJson(json);
+
+  @override
+  Future<IbscbsAssessmentView> get() async {
+    calls.add('get');
+    return _view;
+  }
+
+  @override
+  Future<IbscbsAssessmentView> create(
+      {required String validFrom, required String assessment}) async {
+    if (failOn != null) throw failOn!;
+    calls.add('create:$validFrom:$assessment');
+    json = _viewJson(items: [
+      {'validFrom': validFrom, 'assessment': assessment, 'supported': assessment == '1', 'inEffect': false, 'editable': true},
+    ]);
+    return _view;
+  }
+
+  @override
+  Future<IbscbsAssessmentView> change(String validFrom,
+      {required String assessment}) async {
+    calls.add('change:$validFrom:$assessment');
+    return _view;
+  }
+
+  @override
+  Future<IbscbsAssessmentView> remove(String validFrom) async {
+    calls.add('remove:$validFrom');
+    json = _viewJson();
+    return _view;
+  }
+}
+
+Widget _wrap(Widget child) => MaterialApp(
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.teal),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: Padding(padding: const EdgeInsets.all(16), child: child),
+        ),
+      ),
+    );
+
+Future<void> _pump(WidgetTester tester, _FakeDatasource ds,
+    {List<FieldConfigEntity> fieldConfig = const []}) async {
+  tester.view.physicalSize = const Size(1000, 2400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  await tester.pumpWidget(_wrap(EstablishmentIbscbsAssessmentSection(
+      datasource: ds, fieldConfig: fieldConfig)));
+  await tester.pumpAndSettle();
+}
+
+Finder _button(String text, {int index = 0}) => find
+    .ancestor(
+        of: find.text(text),
+        matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))
+    .at(index);
+
+Future<void> _choose(WidgetTester tester, String label, String option, {int index = 0}) async {
+  await tester.tap(find.text(label).at(index));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(option).last);
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  setUpAll(() {
+    final json = jsonDecode(File('assets/translations/pt.json').readAsStringSync())
+        as Map<String, dynamic>;
+    Localization.load(const Locale('pt'), translations: Translations(json));
+  });
+
+  group('entidade', () {
+    test('leitura estrita: tipo trocado LANÇA (o datasource vira falha de leitura)', () {
+      final view = IbscbsAssessmentView.fromJson(_viewJson(items: [
+        {'validFrom': '2027-01-01', 'assessment': '3', 'supported': false, 'inEffect': false, 'editable': true},
+      ]));
+      expect(view.currentValidFrom, isNull);
+      expect(view.items.single.editable, isTrue);
+      expect(() => IbscbsAssessmentView.fromJson(const {}), throwsA(anything));
+      expect(() => IbscbsAssessmentView.fromJson({..._viewJson(), 'items': 'x'}), throwsA(anything));
+    });
+
+    test('sugestão = próximo início de semestre (só sugestão — a data é livre)', () {
+      expect(suggestedAssessmentStart('2026-11-01'), '2027-01-01');
+      expect(suggestedAssessmentStart('2027-01-01'), '2027-01-01');
+      expect(suggestedAssessmentStart('2027-03-10'), '2027-07-01');
+      expect(suggestedAssessmentStart('2027-07-02'), '2028-01-01');
+    });
+
+    test('pendências espelham a regra da API (data real, hoje, piso do regular)', () {
+      final view = IbscbsAssessmentView.fromJson(_viewJson());
+      expect(view.pendencyFor('2027-01-01', '3'), isNull);
+      expect(view.pendencyFor('2026-11-01', '1'), isNull);
+      expect(view.pendencyFor(null, '1'), 'forms.establishment.ibscbsDateInvalid');
+      expect(view.pendencyFor('2027-02-30', '1'), 'forms.establishment.ibscbsDateInvalid');
+      expect(view.pendencyFor('2027-01-01', null), 'forms.establishment.ibscbsAssessmentRequired');
+      expect(view.pendencyFor('2026-10-31', '1'), 'forms.establishment.ibscbsDatePast');
+      expect(view.pendencyFor('2026-12-01', '2'), 'forms.establishment.ibscbsRegularTooEarly');
+    });
+
+    test('aviso: opção sem suporte vigente ou futura (a passada encerrada não conta)', () {
+      expect(IbscbsAssessmentView.fromJson(_viewJson()).firstUnsupported, isNull);
+      final future = IbscbsAssessmentView.fromJson(_viewJson(items: [
+        {'validFrom': '2027-01-01', 'assessment': '3', 'supported': false, 'inEffect': false, 'editable': true},
+      ]));
+      expect(future.firstUnsupported?.validFrom, '2027-01-01');
+      final ended = IbscbsAssessmentView.fromJson(_viewJson(today: '2027-08-01', items: [
+        {'validFrom': '2027-01-01', 'assessment': '3', 'supported': false, 'inEffect': false, 'editable': false},
+        {'validFrom': '2027-07-01', 'assessment': '1', 'supported': true, 'inEffect': true, 'editable': false},
+      ]));
+      expect(ended.firstUnsupported, isNull);
+    });
+  });
+
+  group('seção', () {
+    testWidgets('sem opção: vale a apuração pelo Simples, sem aviso, data sugerida', (tester) async {
+      final ds = _FakeDatasource(_viewJson());
+      await _pump(tester, ds);
+      expect(ds.calls, ['get']);
+      expect(find.text('Vale hoje: 1 — IBS e CBS apurados pelo Simples Nacional (sem opção registrada)'), findsOneWidget);
+      expect(find.textContaining('será RECUSADO'), findsNothing);
+      expect(find.text('Nenhuma opção registrada.'), findsOneWidget);
+      expect(find.text('01/01/2027'), findsOneWidget);   // sugestão no campo
+    });
+
+    testWidgets('opção 3 futura: aviso da recusa, linha editável (salvar/excluir)', (tester) async {
+      final ds = _FakeDatasource(_viewJson(items: [
+        {'validFrom': '2027-01-01', 'assessment': '3', 'supported': false, 'inEffect': false, 'editable': true},
+      ]));
+      await _pump(tester, ds);
+      expect(find.text('A partir de 01/01/2027 o faturamento será RECUSADO: o regime regular de IBS/CBS ainda não é suportado pelo sistema.'),
+          findsOneWidget);
+      expect(find.text('01/01/2027 · futura'), findsOneWidget);
+      expect(find.text('regime regular — ainda não suportado'), findsOneWidget);
+      await tester.tap(_button('Excluir'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Excluir').last);   // confirma a decisão
+      await tester.pumpAndSettle();
+      expect(ds.calls, contains('remove:2027-01-01'));
+    });
+
+    testWidgets('linha vigente/encerrada é só leitura (a API diz editable=false)', (tester) async {
+      final ds = _FakeDatasource(_viewJson(
+        today: '2027-03-01',
+        current: const {'assessment': '1', 'validFrom': '2026-11-05', 'supported': true},
+        items: [
+          {'validFrom': '2026-11-05', 'assessment': '1', 'supported': true, 'inEffect': true, 'editable': false},
+        ],
+      ));
+      await _pump(tester, ds);
+      expect(find.text('05/11/2026 · vigente'), findsOneWidget);
+      expect(find.text('Excluir'), findsNothing);
+      expect(find.text('Salvar'), findsNothing);
+    });
+
+    testWidgets('registrar: pendência pela ponte ANTES da API (regular antes de 2027); válido chama create', (tester) async {
+      final ds = _FakeDatasource(_viewJson());
+      await _pump(tester, ds);
+      await tester.enterText(find.widgetWithText(TextFormField, 'Início da opção (dd/mm/aaaa)'), '01/12/2026');
+      await _choose(tester, 'Opção de apuração', '3 — IBS e CBS apurados pelo regime regular');
+      await tester.tap(_button('Registrar'));
+      await tester.pumpAndSettle();
+      expect(find.text('O regime regular (opção 2 ou 3) só pode valer a partir de 01/01/2027'), findsOneWidget);
+      expect(ds.calls, ['get']);
+      await tester.tap(find.text('OK').last);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.widgetWithText(TextFormField, 'Início da opção (dd/mm/aaaa)'), '01/01/2027');
+      // o ato que BLOQUEIA o faturamento pede decisão explícita (gate socrático, LOW 5) — cancelar não envia
+      await tester.tap(_button('Registrar'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('o faturamento será RECUSADO a partir de 01/01/2027'), findsOneWidget);
+      await tester.tap(find.text('Cancelar').last);
+      await tester.pumpAndSettle();
+      expect(ds.calls, ['get']);
+      await tester.tap(_button('Registrar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirmar').last);
+      await tester.pumpAndSettle();
+      expect(ds.calls, ['get', 'create:2027-01-01:3']);
+    });
+
+    testWidgets('registrar a opção suportada (1) não pede confirmação', (tester) async {
+      final ds = _FakeDatasource(_viewJson());
+      await _pump(tester, ds);
+      await _choose(tester, 'Opção de apuração', '1 — IBS e CBS apurados pelo Simples Nacional');
+      await tester.tap(_button('Registrar'));
+      await tester.pumpAndSettle();
+      expect(ds.calls, ['get', 'create:2027-01-01:1']);
+    });
+
+    testWidgets('falha da API sai pela ponte; a seção segue utilizável', (tester) async {
+      final ds = _FakeDatasource(_viewJson())
+        ..failOn = const Failure(message: 'Já existe opção de apuração do IBS/CBS a partir de 2027-01-01 — altere a existente',
+            code: 'IBSCBS_ASSESSMENT_DUPLICATE');
+      await _pump(tester, ds);
+      await _choose(tester, 'Opção de apuração', '1 — IBS e CBS apurados pelo Simples Nacional');
+      await tester.tap(_button('Registrar'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Já existe opção de apuração'), findsOneWidget);
+    });
+
+    testWidgets('motor de campos: o rótulo do cliente substitui o padrão do app', (tester) async {
+      final ds = _FakeDatasource(_viewJson());
+      await _pump(tester, ds, fieldConfig: const [
+        FieldConfigEntity(fieldName: 'valid_from', kind: 'Date', requiredTech: true, required: true, caption: 'Vigência a partir de'),
+      ]);
+      expect(find.widgetWithText(TextFormField, 'Vigência a partir de'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Início da opção (dd/mm/aaaa)'), findsNothing);
+    });
+  });
+}

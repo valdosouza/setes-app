@@ -12,12 +12,16 @@ import '../../../../shared/entity/widgets/phone_list_tab.dart';
 import '../../../../shared/entity/widgets/social_media_list_tab.dart';
 import '../../../../shared/feedback/feedback.dart';
 import '../../../../shared/feedback/form_pendency.dart';
+import '../../../../shared/field_config/entity/field_config_entity.dart';
+import '../../../../shared/field_config/field_config_loader.dart';
 import '../../../../shared/lookup/datasource/city_lookup_datasource.dart';
 import '../../../../shared/lookup/datasource/country_lookup_datasource.dart';
 import '../../../../shared/lookup/datasource/state_lookup_datasource.dart';
+import '../../data/datasource/establishment_ibscbs_assessment_datasource.dart';
 import '../../data/datasource/establishment_issuer_datasource.dart';
 import '../../domain/entity/object_establishment.dart';
 import '../bloc/establishment_bloc.dart';
+import '../widget/establishment_ibscbs_assessment_section.dart';
 import '../widget/establishment_issuer_section.dart';
 
 /// Tela "Meu Estabelecimento" — interface 'establishment', menu Sistema.
@@ -33,7 +37,10 @@ import '../widget/establishment_issuer_section.dart';
 /// PRÓPRIA (subconjunto restrito de campos — decisão fechada com o
 /// usuário): documento e tipo de pessoa são SOMENTE EXIBIÇÃO. A 5ª aba
 /// "Emissor fiscal" (Onda 3) é uma SEÇÃO AUTÔNOMA com datasource próprio —
-/// o check do shell não a salva (ela tem os próprios botões).
+/// o check do shell não a salva (ela tem os próprios botões). A 6ª aba
+/// "Regime IBS/CBS" (D-IB99/D-IB100) segue o mesmo padrão autônomo — a opção
+/// de apuração do IBS/CBS é fato DATADO com escritor próprio na API; os
+/// rótulos dela vêm do motor de campos da interface (FieldConfigLoader).
 class EstablishmentPage extends StatefulWidget {
   const EstablishmentPage({required this.title, super.key});
 
@@ -44,12 +51,14 @@ class EstablishmentPage extends StatefulWidget {
   State<EstablishmentPage> createState() => _EstablishmentPageState();
 }
 
-class _EstablishmentPageState extends State<EstablishmentPage> {
+class _EstablishmentPageState extends State<EstablishmentPage>
+    with FieldConfigLoader {
   late final EstablishmentBloc _bloc;
   late final CountryLookupDatasource _countryLookup;
   late final StateLookupDatasource _stateLookup;
   late final CityLookupDatasource _cityLookup;
   late final EstablishmentIssuerDatasource _issuerDatasource;
+  late final EstablishmentIbscbsAssessmentDatasource _ibscbsDatasource;
 
   /// Ancora o fields[] do servidor no campo certo (showServerFieldError).
   final _formViewKey = GlobalKey<_EstablishmentFormViewState>();
@@ -63,6 +72,10 @@ class _EstablishmentPageState extends State<EstablishmentPage> {
     _stateLookup = Modular.get<StateLookupDatasource>();
     _cityLookup = Modular.get<CityLookupDatasource>();
     _issuerDatasource = Modular.get<EstablishmentIssuerDatasource>();
+    _ibscbsDatasource = Modular.get<EstablishmentIbscbsAssessmentDatasource>();
+    // D-CF4: a aba do regime IBS/CBS adota o motor de campos (catálogo da
+    // interface `establishment` — seed sql/71); o resto da tela, na onda.
+    loadFieldConfig('establishment');
   }
 
   /// Sem lista para voltar — "voltar" sai da tela para a Home (mesmo botão
@@ -142,6 +155,8 @@ class _EstablishmentPageState extends State<EstablishmentPage> {
             stateLookup: _stateLookup,
             cityLookup: _cityLookup,
             issuerDatasource: _issuerDatasource,
+            ibscbsDatasource: _ibscbsDatasource,
+            fieldConfig: fieldConfig,
             onDraftChanged: (d) => _bloc.add(EstablishmentDraftChanged(d)),
             onSave: () => _bloc.add(EstablishmentSaveRequested(draft)),
             onBack: _back,
@@ -163,6 +178,8 @@ class _EstablishmentFormView extends StatefulWidget {
     required this.stateLookup,
     required this.cityLookup,
     required this.issuerDatasource,
+    required this.ibscbsDatasource,
+    this.fieldConfig = const [],
     required this.onDraftChanged,
     required this.onSave,
     required this.onBack,
@@ -176,6 +193,10 @@ class _EstablishmentFormView extends StatefulWidget {
   final StateLookupDatasource stateLookup;
   final CityLookupDatasource cityLookup;
   final EstablishmentIssuerDatasource issuerDatasource;
+  final EstablishmentIbscbsAssessmentDatasource ibscbsDatasource;
+
+  /// Config resolvida da interface `establishment` (motor de campos).
+  final List<FieldConfigEntity> fieldConfig;
   final ValueChanged<ObjectEstablishment> onDraftChanged;
   final VoidCallback onSave;
   final VoidCallback onBack;
@@ -187,7 +208,7 @@ class _EstablishmentFormView extends StatefulWidget {
 
 class _EstablishmentFormViewState extends State<_EstablishmentFormView>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 5, vsync: this);
+  late final TabController _tabs = TabController(length: 6, vsync: this);
 
   /// Opção "não informado" dos dropdowns de regime — o draft guarda '' e
   /// o toJson manda null (limpa na API).
@@ -417,6 +438,7 @@ class _EstablishmentFormViewState extends State<_EstablishmentFormView>
               Tab(text: 'register.tabPhones'.tr()),
               Tab(text: 'register.tabSocialMedia'.tr()),
               Tab(text: 'forms.establishment.issuerTab'.tr()),
+              Tab(text: 'forms.establishment.ibscbsTab'.tr()),
             ],
           ),
           Expanded(
@@ -633,6 +655,17 @@ class _EstablishmentFormViewState extends State<_EstablishmentFormView>
                   children: [
                     EstablishmentIssuerSection(
                         datasource: widget.issuerDatasource),
+                  ],
+                ),
+                // Regime IBS/CBS (D-IB99/D-IB100): seção autônoma — opção de
+                // apuração DATADA, escritor próprio na API.
+                ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    EstablishmentIbscbsAssessmentSection(
+                      datasource: widget.ibscbsDatasource,
+                      fieldConfig: widget.fieldConfig,
+                    ),
                   ],
                 ),
               ],
