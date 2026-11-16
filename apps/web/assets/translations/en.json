@@ -410,6 +410,7 @@
       "ibscbsSince": "since {}",
       "ibscbsNoOption": "no option recorded",
       "ibscbsUnsupportedWarning": "From {} on, invoicing will be REFUSED: the regular IBS/CBS regime is not supported by the system yet.",
+      "ibscbsLeftSimplesNotice": "This establishment has an IBS/CBS assessment option starting {} that only applies to the Simples Nacional. Invoicing from that date on will be refused until that option is removed or changed.",
       "ibscbsHistory": "Recorded options",
       "ibscbsHistoryEmpty": "No option recorded.",
       "ibscbsInEffect": "in effect",

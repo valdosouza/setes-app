@@ -26,14 +26,17 @@ class EstablishmentPanelState extends EstablishmentState {
 }
 
 /// One-shot para a ponte de feedback (Framework de Mensagens) — sucesso =
-/// SnackBar (R1).
+/// SnackBar (R1). [ibscbsNoticeFrom] (ISO, D-IB105): o salvamento tirou o
+/// estabelecimento do Simples e há opção de apuração 2/3 a partir dessa
+/// data — a página soma ao SnackBar o aviso NÃO bloqueante (dialog info).
 class EstablishmentActionSuccess extends EstablishmentState {
-  const EstablishmentActionSuccess(this.messageKey);
+  const EstablishmentActionSuccess(this.messageKey, {this.ibscbsNoticeFrom});
 
   final String messageKey;
+  final String? ibscbsNoticeFrom;
 
   @override
-  List<Object?> get props => [messageKey];
+  List<Object?> get props => [messageKey, ibscbsNoticeFrom];
 }
 
 /// One-shot de falha — a página decide dialog genérico ou ancorar

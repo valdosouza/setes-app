@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 
+import '../../domain/entity/establishment_saved.dart';
 import '../../domain/entity/object_establishment.dart';
 
 /// Datasource remoto do PRÓPRIO estabelecimento: /api/establishment na
@@ -7,7 +8,7 @@ import '../../domain/entity/object_establishment.dart';
 /// implícito (token do usuário logado).
 abstract class EstablishmentDatasource {
   Future<ObjectEstablishment> get();
-  Future<ObjectEstablishment> put(ObjectEstablishment establishment);
+  Future<EstablishmentSaved> put(ObjectEstablishment establishment);
 }
 
 class EstablishmentDatasourceImpl implements EstablishmentDatasource {
@@ -22,9 +23,9 @@ class EstablishmentDatasourceImpl implements EstablishmentDatasource {
   }
 
   @override
-  Future<ObjectEstablishment> put(ObjectEstablishment establishment) async {
+  Future<EstablishmentSaved> put(ObjectEstablishment establishment) async {
     final json =
         await client.put('/api/establishment', establishment.toJson());
-    return ObjectEstablishment.fromJson(json['data'] as Map<String, dynamic>);
+    return EstablishmentSaved.fromJson(json['data'] as Map<String, dynamic>);
   }
 }

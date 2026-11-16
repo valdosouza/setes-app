@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/entity/establishment_saved.dart';
 import '../../domain/entity/object_establishment.dart';
 import '../../domain/usecase/establishment_get.dart';
 import '../../domain/usecase/establishment_put.dart';
@@ -52,9 +53,12 @@ class EstablishmentBloc extends Bloc<EstablishmentEvent, EstablishmentState> {
         emit(EstablishmentActionFailure(failure));
         emit(EstablishmentPanelState(draft: event.draft));
       },
-      (updated) async {
-        emit(const EstablishmentActionSuccess('register.saved'));
-        emit(EstablishmentPanelState(draft: updated));
+      (EstablishmentSaved saved) async {
+        // D-IB105: o aviso de saída do Simples com opção futura 2/3 vai
+        // JUNTO do sucesso — o salvamento seguiu; a página mostra os dois.
+        emit(EstablishmentActionSuccess('register.saved',
+            ibscbsNoticeFrom: saved.ibscbsNoticeFrom));
+        emit(EstablishmentPanelState(draft: saved.establishment));
       },
     );
   }

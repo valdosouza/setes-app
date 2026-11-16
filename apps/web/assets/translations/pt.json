@@ -410,6 +410,7 @@
       "ibscbsSince": "desde {}",
       "ibscbsNoOption": "sem opção registrada",
       "ibscbsUnsupportedWarning": "A partir de {} o faturamento será RECUSADO: o regime regular de IBS/CBS ainda não é suportado pelo sistema.",
+      "ibscbsLeftSimplesNotice": "Este estabelecimento tem uma opção de apuração do IBS/CBS a partir de {} que só vale para o Simples Nacional. O faturamento a partir dessa data será recusado até essa opção ser excluída ou trocada.",
       "ibscbsHistory": "Opções registradas",
       "ibscbsHistoryEmpty": "Nenhuma opção registrada.",
       "ibscbsInEffect": "vigente",

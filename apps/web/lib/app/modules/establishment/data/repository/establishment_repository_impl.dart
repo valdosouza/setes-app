@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:dartz/dartz.dart';
 
+import '../../domain/entity/establishment_saved.dart';
 import '../../domain/entity/object_establishment.dart';
 import '../../domain/repository/establishment_repository.dart';
 import '../datasource/establishment_datasource.dart';
@@ -25,7 +26,7 @@ class EstablishmentRepositoryImpl implements EstablishmentRepository {
       _guard(() => datasource.get());
 
   @override
-  Future<Either<Failure, ObjectEstablishment>> put(
+  Future<Either<Failure, EstablishmentSaved>> put(
           ObjectEstablishment establishment) =>
       _guard(() => datasource.put(establishment));
 }

@@ -22,6 +22,7 @@ import '../../data/datasource/establishment_issuer_datasource.dart';
 import '../../domain/entity/object_establishment.dart';
 import '../bloc/establishment_bloc.dart';
 import '../widget/establishment_ibscbs_assessment_section.dart';
+import '../widget/establishment_saved_feedback.dart';
 import '../widget/establishment_issuer_section.dart';
 
 /// Tela "Meu Estabelecimento" — interface 'establishment', menu Sistema.
@@ -121,8 +122,8 @@ class _EstablishmentPageState extends State<EstablishmentPage>
         // está montado.
         listener: (context, state) {
           if (state is EstablishmentActionSuccess) {
-            showSuccessFeedback(context, state.messageKey);
             setState(() => _ibscbsEpoch++);
+            showEstablishmentSavedFeedback(context, state);
             return;
           }
           final failure = (state as EstablishmentActionFailure).failure;
