@@ -49,7 +49,6 @@
     "changePassword": "Alterar senha",
     "passwordChanged": "Senha alterada com sucesso",
     "passwordsDontMatch": "As senhas não conferem",
-    "passwordTooShort": "A senha deve ter pelo menos 5 caracteres",
     "selectionExpired": "Sessão de seleção expirada — faça login novamente",
     "informEmail": "Informe o e-mail da conta"
   },
@@ -92,6 +91,7 @@
     "nextPage": "Próxima página",
     "saved": "Registro salvo",
     "deleted": "Registro excluído",
+    "ownEstablishment": "Esta entidade é o próprio estabelecimento — os dados da empresa e a tributação se editam em Meu Estabelecimento; aqui só os campos do papel.",
     "confirmDelete": "Confirma a exclusão?",
     "error": "Não foi possível concluir a operação",
     "yes": "Sim",
@@ -125,7 +125,16 @@
   },
   "forms": {
     "validation": {
-      "required": "Campo obrigatório",
+      "password": {
+        "blank": "A senha não pode ser só espaços",
+        "invalid-char": "A senha tem um caractere que não pode ser usado",
+        "too-short": "A senha deve ter pelo menos 8 caracteres",
+        "too-long": "A senha deve ter no máximo 100 caracteres",
+        "common": "Esta senha é muito comum — escolha outra",
+        "contains-email": "A senha não pode conter o nome do seu e-mail (o trecho antes do @)",
+        "same-as-current": "A nova senha deve ser diferente da atual",
+        "hint": "Mínimo de 8 caracteres. Não use senhas comuns nem o nome do seu e-mail."
+      },      "required": "Campo obrigatório",
       "minLength": "Tamanho mínimo não atingido",
       "maxLength": "Tamanho máximo excedido",
       "onlyDigits": "Somente números",
@@ -300,6 +309,9 @@
       "kind": "Tipo da Rede Social",
       "link": "Link da Rede Social"
     },
+    "institutionInterfaces": {
+      "inactive": "inativo"
+    },
     "institution": {
       "tab": "Estabelecimento",
       "tabInterfaces": "Interfaces",
@@ -314,8 +326,6 @@
       "adminEmailHint": "Será o login de acesso do administrador",
       "adminEmailInvalid": "E-mail inválido",
       "adminPassword": "Senha inicial",
-      "adminPasswordHint": "Mínimo de 5 caracteres",
-      "adminPasswordShort": "A senha deve ter pelo menos 5 caracteres",
       "active": "Ativo",
       "inactive": "Inativo",
       "interfacesSaveFirst": "Salve o estabelecimento primeiro — o contrato de interfaces é gravado no schema do cliente, criado no salvar.",
@@ -460,13 +470,15 @@
       "institutions": "Estabelecimentos (o usuário só consegue entrar onde tiver vínculo ativo)",
       "institutionsSaved": "Vínculos do usuário atualizados",
       "institutionsSaveFirst": "Salve o usuário primeiro para vincular os estabelecimentos.",
-      "passwordKeepHint": "Vazio mantém a senha atual",
+      "passwordOwnerOnly": "A senha só é trocada pelo próprio usuário, pelo \"Esqueci minha senha\" — o cadastro define a senha uma vez, na criação.",
       "privilegesTitle": "Privilégios de Acesso (usuário regular: o menu mostra só as interfaces com Visualizar)",
       "privilegesInstitution": "Estabelecimento",
       "privilegesLinkFirst": "Vincule o usuário a um estabelecimento antes de definir privilégios.",
       "privilegesNone": "Sem acesso",
       "privilegesSaved": "Privilégios atualizados",
       "privilegesVisualizarHint": "Marcar qualquer privilégio inclui Visualizar — sem ele a interface não aparece no menu.",
+      "privilegesViewOffWarning": "Sem Visualizar a tela sai do usuário. Saem também: {}.",
+      "privilegesLegacyNoView": "Concessão antiga sem Visualizar: ao salvar, Visualizar entra junto.",
       "tabData": "Dados do Usuário",
       "tabPermissions": "Permissões",
       "permissionsSaveFirst": "Salve o usuário primeiro — as permissões são liberadas após o cadastro."
@@ -1597,6 +1609,7 @@
       "interfaces": "Interfaces",
       "customers": "Clientes",
       "institutions": "Estabelecimentos",
+      "institution-interfaces": "Interfaces dos clientes",
       "establishment": "Meu Estabelecimento",
       "users": "Usuários",
       "modules": "Módulos",
@@ -2053,7 +2066,8 @@
       "requires-regular": "classificação exige o regime regular",
       "place-indicator": "local do fornecimento (cIndOp) inválido",
       "nbs-missing": "serviço sem NBS",
-      "nbs-not-accepted": "NBS não aceita pelo catálogo"
+      "nbs-not-accepted": "NBS não aceita pelo catálogo",
+      "cst-without-group": "CST sem o grupo IBS/CBS — ainda não suportado na NFS-e"
     },
     "previewFor": "Prévia para faturar em {}:",
     "atObligationRefused": "A partir de {} o faturamento será RECUSADO: {}",
